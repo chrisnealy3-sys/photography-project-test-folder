@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Florence, 5-Day Forecast</title>
+<style>
+  :root {
+    --bg: #faf6ef; --ink: #2b2118; --muted: #7a6a58; --card: #fff;
+    --hot: #d9572b; --cold: #3b7dd8; --rain: #2f6fb0; --wind: #6b8f71; --line: #e6dccd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161210; --ink: #f1e8da; --muted: #a39482; --card: #221c18;
+      --hot: #f08a5d; --cold: #7fb2f0; --rain: #6aa6e0; --wind: #9bc4a0; --line: #3a3029;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161210; --ink: #f1e8da; --muted: #a39482; --card: #221c18;
+    --hot: #f08a5d; --cold: #7fb2f0; --rain: #6aa6e0; --wind: #9bc4a0; --line: #3a3029;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 Georgia, "Times New Roman", serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-style: italic; }
+  h2 { font-size: 1.3rem; margin: 40px 0 12px; }
+  .days { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .day { font-weight: bold; }
+  .date { color: var(--muted); font-size: 0.85rem; }
+  .icon { width: 64px; height: 64px; }
+  .temps { font-size: 1.25rem; }
+  .temps span { color: var(--hot); } .temps em { color: var(--cold); font-style: normal; }
+  .bar { font: 0.8rem/1 Georgia, serif; color: var(--muted); display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 6px; }
+  .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 4px; }
+  .note { font-size: 0.85rem; color: var(--muted); font-style: italic; margin-top: auto; }
+
+  .movies { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .poster {
+    position: relative; overflow: hidden; border-radius: 10px; aspect-ratio: 2 / 3;
+    color: #fff; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  }
+  .poster svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .poster .txt { position: relative; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .poster .tag { font-size: 0.75rem; letter-spacing: .15em; text-transform: uppercase; opacity: .85; }
+  .poster .title { font-size: 1.35rem; font-weight: bold; margin: 4px 0; }
+  .poster .line { font-size: 0.9rem; font-style: italic; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Florence, Italy</h1>
+  <p class="sub">Five-day outlook, Thu 8 Oct to Mon 12 Oct 2026, with a film for each day</p>
+
+  <section class="days" id="days" aria-label="Daily forecast"></section>
+
+  <h2>Now showing</h2>
+  <section class="movies" id="movies" aria-label="Movie posters"></section>
+
+  <footer>Data: Open-Meteo forecast (Florence, 43.77N 11.25E). Temperatures in °C. Bars scale to the five-day maximum.</footer>
+</main>
+
+<script>
+  // Forecast values from Open-Meteo, Florence, Oct 8 to 12 2026
+  const days = [
+    { date: "2026-10-08", code: 80, max: 23.0, min: 18.7, rain: 100, wind: 12.1 },
+    { date: "2026-10-09", code: 3,  max: 23.6, min: 16.5, rain: 30,  wind: 6.3 },
+    { date: "2026-10-10", code: 45, max: 23.6, min: 12.2, rain: 13,  wind: 9.1 },
+    { date: "2026-10-11", code: 45, max: 23.3, min: 12.7, rain: 18,  wind: 7.2 },
+    { date: "2026-10-12", code: 45, max: 23.1, min: 11.7, rain: 15,  wind: 19.7 }
+  ];
+
+  // Map WMO weather codes to a label, icon kind and a film
+  const kinds = {
+    rain:  { label: "Showers",       film: { title: "Singin' in the Rain", year: 1952, line: "Dancing through the downpour." } },
+    cloud: { label: "Overcast",      film: { title: "Blade Runner",         year: 1982, line: "Rain on a grey city, all day." } },
+    fog:   { label: "Fog",           film: { title: "The Fog",              year: 1980, line: "Something is coming through the mist." } }
+  };
+  const kindOf = c => c >= 80 ? "rain" : c === 3 ? "cloud" : "fog";
+
+  // Simple SVG weather icon
+  function icon(kind) {
+    if (kind === "rain") return `<svg class="icon" viewBox="0 0 64 64">
+      <ellipse cx="32" cy="24" rx="20" ry="12" fill="#9fb4c8"/>
+      <ellipse cx="22" cy="28" rx="14" ry="10" fill="#9fb4c8"/>
+      <g stroke="#2f6fb0" stroke-width="3" stroke-linecap="round">
+        <line x1="22" y1="44" x2="18" y2="56"/><line x1="34" y1="44" x2="30" y2="56"/><line x1="46" y1="44" x2="42" y2="56"/></g></svg>`;
+    if (kind === "cloud") return `<svg class="icon" viewBox="0 0 64 64">
+      <circle cx="22" cy="22" r="10" fill="#f2c14e"/>
+      <ellipse cx="36" cy="38" rx="20" ry="11" fill="#b9c2cc"/>
+      <ellipse cx="26" cy="34" rx="12" ry="9" fill="#b9c2cc"/></svg>`;
+    return `<svg class="icon" viewBox="0 0 64 64">
+      <g stroke="#8a8075" stroke-width="4" stroke-linecap="round">
+        <line x1="8" y1="24" x2="56" y2="24"/><line x1="12" y1="34" x2="52" y2="34"/>
+        <line x1="8" y1="44" x2="56" y2="44"/><line x1="16" y1="54" x2="48" y2="54"/></g></svg>`;
+  }
+
+  function bar(label, value, max, color, unit) {
+    const pct = Math.max(4, Math.round((value / max) * 100));
+    return `<div class="bar"><span>${label}</span><div class="track"><div class="fill" style="width:${pct}%;background:${color}"></div></div><span>${Math.round(value)}${unit}</span></div>`;
+  }
+
+  const maxWind = Math.max(...days.map(d => d.wind));
+  const dayFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+  document.getElementById("days").innerHTML = days.map(d => {
+    const k = kindOf(d.code);
+    const info = kinds[k];
+    const dt = dayFmt.format(new Date(d.date + "T12:00:00"));
+    return `<article class="card">
+      <div class="day">${dt}</div>
+      ${icon(k)}
+      <div class="temps"><span>${Math.round(d.max)}°</span> / <em>${Math.round(d.min)}°</em></div>
+      ${bar("Rain", d.rain, 100, "var(--rain)", "%")}
+      ${bar("Wind", d.wind, maxWind, "var(--wind)", " km/h")}
+      <div class="note">${info.label}. ${info.film.title}.</div>
+    </article>`;
+  }).join("");
+
+  // Movie posters drawn with SVG, one per distinct weather mood
+  const posters = {
+    rain: { bg: ["#1d3557", "#457b9d"], art: `<line x1="20" y1="0" x2="10" y2="300" stroke="#cfe3f5" stroke-width="2" opacity=".4"/>
+        <line x1="60" y1="0" x2="50" y2="300" stroke="#cfe3f5" stroke-width="2" opacity=".4"/>
+        <line x1="100" y1="0" x2="90" y2="300" stroke="#cfe3f5" stroke-width="2" opacity=".4"/>
+        <line x1="140" y1="0" x2="130" y2="300" stroke="#cfe3f5" stroke-width="2" opacity=".4"/>
+        <line x1="180" y1="0" x2="170" y2="300" stroke="#cfe3f5" stroke-width="2" opacity=".4"/>
+        <circle cx="150" cy="90" r="34" fill="#ffd166"/>` },
+    cloud: { bg: ["#2c2c3a", "#5a5a6e"], art: `<rect x="0" y="0" width="200" height="300" fill="none"/>
+        <g fill="#0b0b12"><rect x="20" y="120" width="30" height="180"/><rect x="60" y="90" width="40" height="210"/>
+        <rect x="110" y="140" width="28" height="160"/><rect x="150" y="70" width="34" height="230"/></g>
+        <g fill="#ffd166"><rect x="68" y="120" width="6" height="8"/><rect x="158" y="100" width="6" height="8"/></g>` },
+    fog: { bg: ["#1f2a24", "#3e5a4b"], art: `<g fill="#cdd8cf" opacity=".35">
+        <ellipse cx="60" cy="80" rx="90" ry="22"/><ellipse cx="120" cy="150" rx="110" ry="26"/>
+        <ellipse cx="70" cy="230" rx="100" ry="24"/></g>
+        <path d="M100 300 L100 190 L92 150 L108 150 L100 190" fill="#0c0f0d"/>` }
+  };
+
+  document.getElementById("movies").innerHTML = days.map(d => {
+    const k = kindOf(d.code);
+    const f = kinds[k].film;
+    const p = posters[k];
+    return `<figure class="poster" style="margin:0">
+      <svg viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs><linearGradient id="g${d.date}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${p.bg[0]}"/><stop offset="1" stop-color="${p.bg[1]}"/></linearGradient></defs>
+        <rect width="200" height="300" fill="url(#g${d.date})"/>${p.art}
+      </svg>
+      <div class="txt">
+        <div class="tag">${dayFmt.format(new Date(d.date + "T12:00:00"))} · ${Math.round(d.max)}° / ${Math.round(d.min)}°</div>
+        <div class="title">${f.title}</div>
+        <div class="line">${f.year}. ${f.line}</div>
+      </div>
+    </figure>`;
+  }).join("");
+</script>
+</body>
+</html>
