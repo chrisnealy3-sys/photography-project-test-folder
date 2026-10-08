@@ -3,39 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>North Pole Weather Today</title>
+<title>North Pole Temperatures</title>
 <style>
-  /* Layout: one centered column, a single hero reading, then supporting details. */
+  /* Layout: a warm autumn page with one centered column, a hero air reading, then water and surface cards. */
   :root {
-    --bg: #eef3f7;
-    --fg: #14212b;
-    --muted: #5b6b78;
-    --card: #ffffff;
-    --line: #d5dee6;
-    --accent: #2f6f9f;
-    --warn: #9a5b00;
+    --bg: #fbf1de;
+    --fg: #3b2a1e;
+    --muted: #7a6150;
+    --card: #fffaf0;
+    --line: #ecd7b3;
+    --accent: #c9571a;
+    --gold: #e0a11b;
+    --leaf: #5f7f22;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0e1820;
-      --fg: #e6eef4;
-      --muted: #9aaab6;
-      --card: #16242e;
-      --line: #263846;
-      --accent: #7fb8e0;
-      --warn: #f0b35a;
+      --bg: #2a1c14;
+      --fg: #f7e9d5;
+      --muted: #c9ad92;
+      --card: #3a2820;
+      --line: #5a4031;
+      --accent: #f08a3e;
+      --gold: #f2bd4a;
+      --leaf: #a9c86a;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0e1820;
-    --fg: #e6eef4;
-    --muted: #9aaab6;
-    --card: #16242e;
-    --line: #263846;
-    --accent: #7fb8e0;
-    --warn: #f0b35a;
+    --bg: #2a1c14;
+    --fg: #f7e9d5;
+    --muted: #c9ad92;
+    --card: #3a2820;
+    --line: #5a4031;
+    --accent: #f08a3e;
+    --gold: #f2bd4a;
+    --leaf: #a9c86a;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -52,28 +55,41 @@
     padding-block: 32px;
     padding-inline: 16px;
   }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--leaf);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .brand svg { width: 22px; height: 22px; flex: none; }
   h1 {
-    font-size: 1.6rem;
-    margin: 0 0 4px;
+    font-size: 1.7rem;
+    margin: 8px 0 4px;
     text-wrap: balance;
   }
   .sub {
     color: var(--muted);
     margin: 0 0 24px;
   }
-  .hero {
+  .card {
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 24px;
+    padding: 20px;
+  }
+  .hero {
     display: flex;
     flex-wrap: wrap;
     gap: 16px 24px;
     align-items: center;
+    border-top: 4px solid var(--accent);
   }
   .temp {
     font-size: 3.5rem;
-    font-weight: 300;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--accent);
     line-height: 1;
@@ -81,50 +97,35 @@
   .temp small { font-size: 1.2rem; color: var(--muted); }
   .hero-text { min-width: 0; flex: 1 1 200px; }
   .hero-text strong { display: block; font-size: 1.1rem; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-top: 16px;
-  }
-  .tile {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 16px;
-  }
   .label {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--muted);
   }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
   .value {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-variant-numeric: tabular-nums;
     margin-top: 4px;
   }
-  .bar {
-    height: 6px;
-    background: var(--line);
-    border-radius: 3px;
-    margin-top: 10px;
-    overflow: hidden;
-  }
-  .bar > span {
-    display: block;
-    height: 100%;
-    background: var(--accent);
-  }
+  .value.none { color: var(--muted); font-size: 1.1rem; }
+  .detail { font-size: 0.9rem; color: var(--muted); margin-top: 6px; }
+  .water { border-top: 4px solid var(--leaf); }
+  .surface { border-top: 4px solid var(--gold); }
   .note {
-    margin-top: 20px;
+    margin-top: 16px;
     padding: 14px 16px;
-    border-left: 3px solid var(--warn);
     background: var(--card);
-    border-radius: 8px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
     font-size: 0.92rem;
   }
-  .note strong { color: var(--warn); }
   .sources { margin-top: 20px; font-size: 0.85rem; color: var(--muted); }
   .sources a { color: var(--accent); }
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -132,44 +133,42 @@
 </head>
 <body>
 <main class="wrap">
-  <h1>North Pole Weather Today</h1>
-  <p class="sub">Forecast for 89.95°N, 0.0°E · Wednesday, October 7, 2026 · Model data, UTC</p>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 19c0-8 5-13 15-14-1 10-6 15-14 15-.6 0-1-.4-1-1zm0 0 6-6" /></svg>
+    Autumn at the top of the world
+  </div>
+  <h1>North Pole Temperatures</h1>
+  <p class="sub">89.95°N, 0.0°E · Thursday, October 8, 2026 · Model data, read 22:30 UTC</p>
 
-  <section class="hero" aria-label="Current conditions">
-    <div class="temp">9<small>°C</small></div>
+  <section class="card hero" aria-label="Air temperature">
+    <div class="temp">−11.5<small>°C</small></div>
     <div class="hero-text">
-      <strong>Light snow, mostly</strong>
-      High 14°C · Low 9°C · Light winds
+      <span class="label">Air temperature</span>
+      <strong>Overcast, light wind</strong>
+      Feels like −17.6°C · Wind 17.6 km/h · Today’s range −12.4°C to −9.5°C
     </div>
   </section>
 
-  <section class="grid" aria-label="Details">
-    <div class="tile">
-      <div class="label">Precipitation chance</div>
-      <div class="value">18%</div>
-      <div class="bar" role="img" aria-label="18 percent"><span style="width:18%"></span></div>
+  <section class="grid" aria-label="Water and surface temperatures">
+    <div class="card water">
+      <span class="label">Water temperature</span>
+      <div class="value none">No reading</div>
+      <div class="detail">The ocean here is under sea ice, and the model returned no sea-surface value.</div>
     </div>
-    <div class="tile">
-      <div class="label">Max wind</div>
-      <div class="value">14.2 mph</div>
-      <div class="bar" role="img" aria-label="14.2 mph"><span style="width:14.2%"></span></div>
-    </div>
-    <div class="tile">
-      <div class="label">Sky</div>
-      <div class="value">Snow, some cloud</div>
+    <div class="card surface">
+      <span class="label">Surface temperature</span>
+      <div class="value">−11.5°C</div>
+      <div class="detail">Model soil temperature at 0 cm. It matches the air reading, so treat it as an estimate.</div>
     </div>
   </section>
 
   <p class="note">
-    <strong>Check these numbers before you rely on them.</strong>
-    A forecast of about 9 to 14°C is unusually warm for the North Pole in October, where
-    temperatures are normally well below freezing. The values come from a single model
-    summary and the unit label was unclear, so confirm them against a current source.
+    Every value here comes from a forecast model, not a station measurement. Check a local station before relying on these numbers.
   </p>
 
   <p class="sources">
-    Source: <a href="https://api.open-meteo.com/v1/forecast?latitude=90&amp;longitude=0">Open-Meteo forecast API</a>,
-    lat 90, lon 0, UTC.
+    Sources: <a href="https://api.open-meteo.com/v1/forecast?latitude=90&amp;longitude=0&amp;current=temperature_2m,soil_temperature_0cm,apparent_temperature&amp;timezone=UTC">Open-Meteo forecast API</a>
+    (air and surface), <a href="https://marine-api.open-meteo.com/v1/marine?latitude=90&amp;longitude=0&amp;current=sea_surface_temperature&amp;timezone=UTC">Open-Meteo marine API</a> (water).
   </p>
 </main>
 </body>
